@@ -29,7 +29,8 @@
 
 ;; proc here takes two arguments, left and right.
 (define (fold-lines fn proc init)
-  (with-))
+  (with-input-from-file fn
+    (fold-lines-port (current-input-port) proc init)))
 
 
 (use-modules (srfi srfi-1))
