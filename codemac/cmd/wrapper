@@ -1,0 +1,4 @@
+#!/bin/sh
+GUILE_LOAD_PATH=/home/jmickey/scm:$GUILE_LOAD_PATH
+exec guile -e "(@@ (codemac cmd $(basename $0)) main)" -s "$0" "$@"
+!#
