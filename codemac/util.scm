@@ -31,10 +31,3 @@
 (define (fold-lines fn proc init)
   (with-input-from-file fn
     (fold-lines-port (current-input-port) proc init)))
-
-
-(use-modules (srfi srfi-1))
-(define (adder50 l r)
-  (format #t "left ~a right ~a~%" l r)
-  (+ l r))
-(fold adder50 0  '(1 2 3 4))
