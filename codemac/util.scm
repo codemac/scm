@@ -1,5 +1,13 @@
 (define-module (codemac util)
-  #:use-module (ice-9 rdelim))
+  #:use-module (ice-9 rdelim)
+  #:export (for-each-line-port
+	    for-each-line
+	    map-lines-port
+	    read-lines-port
+	    read-lines
+	    map-lines
+	    fold-lines-port
+	    fold-lines))
 
 (define (for-each-line-port port proc)
   (do ((l (read-line port) (read-line port)))
@@ -15,6 +23,12 @@
     (if (not (eof-object? l))
 	(cons (proc l) (map-lines-port port proc))
 	'())))
+
+(define (read-lines-port p)
+  (map-lines-port p identity))
+
+(define (read-lines)
+  (read-lines-port (current-input-port)))
 
 (define (map-lines fn proc)
   (with-input-from-file fn
