@@ -50,4 +50,3 @@ exec guile -e "(@@ (codemac cmd scmvendor) main)" -s "$0" "$@"
    (vcs 'git)
    (url "https://github.com/ashinn/irregex")
    (ref "2d14c53653629ca33b0adf033d2ef5642d3e9caa")))
-
