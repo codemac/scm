@@ -38,15 +38,30 @@ exec guile -e "(@@ (codemac cmd scmvendor) main)" -s "$0" "$@"
 	(vcs v1)
 	(url u1)
 	(ref r1))
-     (let ((dir (string-append (getenv "HOME") "/scm/vendor/" d1)))
+     (let ((dir (string-append (getenv "HOME") "/scm/codemac/vendor/" d1)))
        (rmdir* dir)
        (runvendor dir v1 u1 r1)
        (if (not (hashdir dir))
 	   (rehashdir dir ".NEWHASH"))))))
 
 (define (main args)
+  ;; irregex is life
   (vendor
    (dir "irregex")
    (vcs 'git)
    (url "https://github.com/ashinn/irregex")
-   (ref "2d14c53653629ca33b0adf033d2ef5642d3e9caa")))
+   (ref "2d14c53653629ca33b0adf033d2ef5642d3e9caa"))
+
+  ;; shepherd, manages my services
+  (vendor
+   (dir "shepherd")
+   (vcs 'git)
+   (url "git://git.sv.gnu.org/shepherd.git")
+   (ref "v0.3.1"))
+  
+  ;; mcron, used as my cron replacement
+  (vendor
+   (dir "mcron")
+   (vcs 'git)
+   (url "git://git.sv.gnu.org/mcron.git")
+   (ref "c0a6eb14c257a47e9573631e5ac09e6528fba377")))
