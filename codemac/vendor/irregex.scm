@@ -14,4 +14,4 @@
 	    irregex-nfa irregex-flags irregex-lengths irregex-names
             irregex-num-submatches irregex-extract irregex-split))
 
-(load-from-path "vendor/irregex/irregex.scm")
+(load-from-path (string-append (dirname (current-filename)) "/src/irregex/irregex.scm"))
