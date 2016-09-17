@@ -30,7 +30,7 @@ exec guile -e "(@@ (codemac cmd scmvendor) main)" -s "$0" "$@"
       (rehashdir dir ".VENDORSHA1")))
 
 (define (rehashdir dir file)
-  (with-dir dir (string-append "find . -type f -exec sha1sum '{}' ';' | grep -v .VENDORSHA1 > " file)))
+  (with-dir dir (string-append "find . -type f -exec sha1sum '{}' ';' | grep -v .VENDORSHA1 | sort -k2 > " file)))
 
 (define-syntax vendor
   (syntax-rules (dir vcs url ref)

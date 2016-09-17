@@ -1,0 +1,191 @@
+                                                              -*- org -*-
+#+TITLE: GNU Shepherd NEWS — history of user-visible changes
+#+STARTUP: content hidestars
+
+Copyright © 2002, 2003 Wolfgang Jährling
+Copyright © 2013, 2014, 2016 Ludovic Courtès <ludo@gnu.org>
+
+  Copying and distribution of this file, with or without modification,
+  are permitted in any medium without royalty provided the copyright
+  notice and this notice are preserved.
+
+Please send dmd bug reports to bug-guix@gnu.org.
+
+* Changes in version 0.3.1
+** Process respawn limit is honored again (regression introduced in 0.3)
+** ‘herd status SERVICE’ displays the last respawn time, if any
+** (shepherd service) exports ‘&action-runtime-error’ and related bindings
+** ‘mkdir-p’ adjusted to cope with GNU/Hurd file system behavior
+
+* Changes in version 0.3
+
+** GNU dmd becomes the GNU Shepherd
+
+The GNU Shepherd herds your daemons!
+See http://www.gnu.org/software/shepherd/#history for details.
+As a side effect, many incompatible changes were made:
+
+  - The ‘dmd’ command was renamed to ‘shepherd’.
+  - The ‘deco’ command was renamed to ‘herd’.
+  - The default system-wide config file is now /etc/shepherd.scm.
+  - The default per-user config file is now ~/.config/shepherd/init.scm.
+  - The special ‘dmd’ service is now called ‘root’ and ‘shepherd’.  Thus,
+    instead of:
+       deco load dmd foo.scm
+    you would now type:
+       herd load root foo.scm
+  - Guile modules now live in the (shepherd …) name space.
+
+** ‘herd status’ and ‘herd detailed-status’ assumes the ‘root’ service
+
+That is, ‘herd status’ is equivalent to ‘herd status root’.
+
+** ‘herd help’ returns a meaningful help message
+** ‘shepherd’ stops itself when it receives SIGINT
+
+This is what happens when ‘shepherd’ is running as PID 1 on GNU/Linux and
+ctrl-alt-del is pressed (see ctrlaltdel(8)).
+
+** ‘halt’ and ‘reboot’ connect to the system socket unconditionally
+** ‘herd’ uses a non-zero exit code upon errors
+** The ‘root’ service has a new ‘eval’ action
+** Basic man pages are now provided
+** ‘make-forkexec-constructor’ has new #:group and #:user parameters
+** ‘make-forkexec-constructor’ has a new #:pid-file parameter
+** (shepherd services) now exports ‘make-actions’ and ‘provided-by’
+** ‘shepherd --pid=FILE’ writes FILE atomically
+** The communication protocol is now entirely sexp-based (see the manual)
+** ‘shepherd’ is more robust to misbehaving clients
+** Cross-compilation is now supported
+** The build system uses “silent rules” by default
+** Internally, the coding style of various parts has been improved
+
+* Changes in version 0.2
+
+** Non-root configuration file is now ~/.dmd.d/init.scm.
+
+For unprivileged uses of dmd, the configuration file used to be
+~/.dmdconf.scm.  It is now ~/.dmd.d/init.scm
+
+** Generate template configuration file when none is found.
+
+A ~/.dmd.d/init.scm template configuration file is now generated when
+dmd is started and no such file exists.
+
+** The 'dmd' service has new 'unload' and 'reload' actions.
+
+The 'unload' action allows a service to be stopped and its definition to
+be unloaded; 'reload' allows a service to be unloaded, and a new
+redefinition to be reloaded, atomically.  See the manual for details.
+
+** 'make-forkexec-constructor' has a new calling convention.
+
+In particular, the procedure now has #:environment-variables
+and #:directory arguments.  See the manual for details.
+
+** New 'exec-command' and 'fork+exec-command' convenience procedures.
+** The 'status' action displays the running value of services (the PID.)
+** 'dmd' has a new '--pid' option.
+** Failures to connect to dmd are gracefully handled.
+** Data is always appended to the log file.
+** Assorted bug fixes and documentation improvements.
+
+* Changes in version 0.1
+** A single socket is used for communication with dmd, with a new protocol.
+
+The new communication protocol between 'dmd' and 'deco' is simpler,
+versioned, and extensible.
+
+** The default socket name is now independent of the calling user.
+** The socket directory is now created under $(localstatedir).
+** The 'dmd' service has new actions 'power-off' and 'halt'; 'stop' reboots
+
+When dmd is running as root, as is the case when it is used as a
+PID-one init system, these actions allow 'root' to cleanly reboot or
+halt the machine.
+
+** New 'reboot' and 'halt' commands.
+** 'dmd' only write to stdout when no client is connected.
+** The configuration file is loaded in a fresh module.
+** 'make-forkexec-constructor' closes all file descriptors after forking.
+** License upgraded to GPL version 3 or later.
+** Manual license upgraded to FDL version 1.3 or later.
+** Many bug fixes, documentation improvements, etc.
+
+* Changes in version -0.4
+** Awaken from a 10-year nap.
+** Ported to Guile 2.0.
+** Modules are modules instead of being loaded.
+** Build system fixes, cleanups, and upgrades.
+
+* Changes in version -0.5
+** dmd: `--socket=-' instead of `--socket=none'.
+** Renamed `extra-action' to plain `action'.
+** The result of user-defined stop code is ignored now.
+** New action for all services: `dmd-status'.
+** Distribution contains file `QUESTIONS'.
+** Improved the `unknown' service implementation in `examples/'.
+** Number of args given to actions is verified.
+** Made docstrings for actions optional.
+** Renamed `{en,dis}able-persistency' to `{,no-}persistency'.
+** Can pass file name to dmd action `persistency'.
+
+* Changes in version -0.6
+** New action `doc' for displaying documentation.
+** `list-actions' is a sub-action of `doc' now.
+** New action `cd' for dmd, useful with `--socket=none'.
+** Distribution contains example for an `unknown' service.
+** At configure time, dmd checks for a Guile installation.
+** Enable readline on `--socket=none' and non-dumb terminal.
+** Startup time finally became completely unacceptable. :-)
+
+* Changes in version -0.7
+** Can fork into background via dmd extra-action `daemonize'.
+** New action for all services: list-actions.
+** New options for dmd: --logfile (-l), and --silent/--quiet
+** Standard option --usage works for both dmd and deco.
+** You can pass relative file names to deco.
+** Never send respawn-output to deco by accident.
+** Better handling of terminals and similar services.
+** Documented evolution of runlevels.
+** Service groups can be used to start/stop services at once.
+** Persistency (i.e. safe state on exit and restore next time).
+** Invoke actions of service `unknown' (if defined) as fallback.
+** Read commands from standard input if socket file name is `none'.
+
+* Changes in version -0.8
+** Show output in deco, not only in dmd.
+** New options in deco: --insecure (-I) and --result-socket (-r)
+** --help displays the options for both dmd and deco.
+** Disable services which are respawning too fast.
+** New actions for all services: enable, disable and enforce.
+** Default extra actions work even when the service is stopped.
+** Documented some internals of dmd.
+
+* Changes in version -0.9
+** Example configuration added.
+** New option for deco: --socket (-s).
+** New option for dmd: --insecure (-I).
+** Added tutorial and completed documentation.
+** Create default socket dir on startup if desired.
+** Added a real build system.
+
+* Changes in Version -0.9.6
+** Controlling dmd completely with deco is now possible.
+** A few bugfixes for service handling.
+** Long options can be abbreviated, short ones also work.
+** Respawning of services works.
+
+* Changes in version -0.9.7
+** User-defined code is always protected with a `catch'.
+** New options: --config and --socket.
+** The new deco program can be used to send commands to dmd.
+
+* Changes in version -0.9.8
+** Starting and stopping of services by symbol works better.
+** Performing extra actions on services possible.
+** Improved documentation.
+** More detailed output.
+
+* Version -0.9.9
+** Initial release.
