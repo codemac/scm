@@ -18,4 +18,4 @@ exec guile -e "(@@ (codemac cmd term) main)" -s "$0" "$@"
     (format #f "#~2,'0x~2,'0x~2,'0x" rr gr br)))
 
 (define (main arg0 . args)
-  (exit (status:exit-val (system* "uxterm" "-bg" (generate-rand-color)))))
+  (execlp "uxterm" "uxterm" "-bg" (generate-rand-color)))
