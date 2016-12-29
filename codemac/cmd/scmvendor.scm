@@ -3,7 +3,8 @@
 exec guile -e "(@@ (codemac cmd scmvendor) main)" -s "$0" "$@"
 !#
 
-(define-module (codemac cmd scmvendor))
+(define-module (codemac cmd scmvendor)
+  #:export (vendor-load-path))
 
 ;; reimplement in raw guile
 (define (rmdir* dir)
@@ -35,42 +36,49 @@ exec guile -e "(@@ (codemac cmd scmvendor) main)" -s "$0" "$@"
 (define (vendor-load-path)
   (string-append (getenv "HOME") "/scm/codemac/vendor/"))
 
-(define-syntax vendor
-  (syntax-rules (dir vcs url ref patches)
-    ((_ (dir d1)
-	(vcs v1)
-	(url u1)
-	(ref r1))
-     (vendor (dir d1) (vcs v1) (url u1) (ref r1) (patches '())))
-    ((_ (dir d1)
-	(vcs v1)
-	(url u1)
-	(ref r1)
-	(patches p))
-     (let ((dir (string-append (vendor-load-path) "/src/" d1)))
-       (rmdir* dir)
-       (runvendor dir v1 u1 r1)
-       (if (not (hashdir dir))
-	   (rehashdir dir ".NEWHASH"))))))
+(define* (vendor #:key
+		 (dir #f)
+		 (vcs #f)
+		 (url #f)
+		 (ref #f)
+		 (install (lambda (src dst) #t))
+		 (patches '()))
+  (format #t "~%Vendoring ~a...~%" dir)
+  (if (or (not dir) (not vcs) (not url) (not ref))
+      (format #t "Vendor not fully specified: ~s~%" (list dir vcs url ref))
+      (let ((srcdir (string-append (vendor-load-path) "/src/" dir)))
+	(rmdir* srcdir)
+	(runvendor srcdir vcs url ref)
+	(if (not (hashdir srcdir))
+	    (rehashdir srcdir ".NEWHASH"))
+	(install srcdir (string-append (vendor-load-path) "/" dir)))))
+
 
 (define (main args)
   ;; irregex is life
   (vendor
-   (dir "irregex")
-   (vcs 'git)
-   (url "https://github.com/ashinn/irregex")
-   (ref "2d14c53653629ca33b0adf033d2ef5642d3e9caa"))
+   #:dir "irregex"
+   #:vcs 'git
+   #:url "https://github.com/ashinn/irregex"
+   #:ref "2d14c53653629ca33b0adf033d2ef5642d3e9caa")
 
-  ;; shepherd, manages my services
+  ;; shepherd, manages my services (maybe download tarfile instead? no
+  ;; need for autoconf)
   (vendor
-   (dir "shepherd")
-   (vcs 'git)
-   (url "git://git.sv.gnu.org/shepherd.git")
-   (ref "v0.3.1"))
+   #:dir "shepherd"
+   #:vcs 'git
+   #:url "git://git.sv.gnu.org/shepherd.git"
+   #:ref "v0.3.1")
   
   ;; mcron, used as my cron replacement
   (vendor
-   (dir "mcron")
-   (vcs 'git)
-   (url "git://git.sv.gnu.org/mcron.git")
-   (ref "c0a6eb14c257a47e9573631e5ac09e6528fba377")))
+   #:dir "mcron"
+   #:vcs 'git
+   #:url "git://git.sv.gnu.org/mcron.git"
+   #:ref "c0a6eb14c257a47e9573631e5ac09e6528fba377")
+
+  (vendor
+   #:dir "lips"
+   #:vcs 'git
+   #:url "https://github.com/rbryan/guile-lips"
+   #:ref "9e253a873f7eb842095859eef6f55611458b618f"))
