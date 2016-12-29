@@ -45,3 +45,7 @@
 (define (fold-lines fn proc init)
   (with-input-from-file fn
     (fold-lines-port (current-input-port) proc init)))
+
+(define (curry func . cargs)
+  (lambda largs
+    (apply func (append cargs largs))))
