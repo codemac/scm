@@ -7,3 +7,9 @@ GUILE_LOAD_PATH=$HOME/scm
 the idea is to depend on guile, but not much else. at some point i'll
 need to add .so compiled files to this as well, i imagine the build
 system will be tup because the lord said thall shall tup.
+
+* Vendoring
+
+Run scmvendor to recopy code from the internet, but remember that many
+things to be loadable in guile kinda suck, so hacks are generally
+placed at the root so I only have one path in my GUILE_LOAD_PATH.
