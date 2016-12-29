@@ -1,16 +1,17 @@
+cf9bc2503e1276c36519cc6d30bcd85a405e2d9f  ./.gitignore
 2715688a415c6294d7b0a0e3748269afc4d69fd1  ./AUTHORS
 cf7c06a646f83b819f6ac93acee67b3ccf6d1aba  ./BUGS
-764b3a51eafd49ddf9ef4a6830ae30152f7b63b2  ./ChangeLog
-11a5b01f60e7e35a13c97240093bd6ab70d0f788  ./configure.ac
 8624bcdae55baeef00cd11d5dfcfa60f68710a02  ./COPYING
+764b3a51eafd49ddf9ef4a6830ae30152f7b63b2  ./ChangeLog
+4edf8e2d2fbe767bb1157ff957492f5dab6e91d3  ./NEWS
+0687728dac1b04913a6fe1b5b93e75508ad1861b  ./README
+c3c4221c21eb84bbeda79e02c39aff6371cc84a1  ./TODO
+11a5b01f60e7e35a13c97240093bd6ab70d0f788  ./configure.ac
 bb5458a8e0dbf1164840792b87ee81e5f25d8650  ./doc/config.texi.in
 9d454a459d4b26d1427f9787a87abc8f8dc414e9  ./doc/fdl.texi
 58c45c27625279a6c49cca62f63b3ad3a2ff0592  ./doc/mcron.texi
-cf9bc2503e1276c36519cc6d30bcd85a405e2d9f  ./.gitignore
 8e9d3a1234d64ae2c5a048f2400b036e729f72ca  ./makefile.am
 e99569e164f9c818079468c76fe525bda9fc5169  ./mcron.c
-4edf8e2d2fbe767bb1157ff957492f5dab6e91d3  ./NEWS
-0687728dac1b04913a6fe1b5b93e75508ad1861b  ./README
 e4e7bc2e52fe5ca6b17f63af3dc929f40f707cf1  ./scm/mcron/config.scm.in
 450b6e13c5b74ec7acf77f0bcf29b59962bb2c7d  ./scm/mcron/crontab.scm
 829653277769480443c539cdfe24739ea7456004  ./scm/mcron/environment.scm
@@ -21,4 +22,3 @@ f6f221fc5ee9c200fb43816777c64900833a10c2  ./scm/mcron/main.scm
 7f2ae9cfa339999e7f5f79cac86f08499fc90215  ./scm/mcron/redirect.scm
 f979b2dc2252c7c9b31f2c986378ba2eff745a99  ./scm/mcron/vixie-specification.scm
 7ee6219d55f828e7c8b6c634ec7448f571860bb7  ./scm/mcron/vixie-time.scm
-c3c4221c21eb84bbeda79e02c39aff6371cc84a1  ./TODO

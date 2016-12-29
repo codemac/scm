@@ -1,0 +1,8 @@
+80be7184e109d33c42c825f14e0cc96aaf4d483d  ./README.md
+1c6e6618501fa5e86564473db5dab673b0fdb173  ./includeme.txt
+8a1e2058079fe516b2e36c92c1bdd98917084e50  ./install.sh
+4561ad9ef1be05282b75ce1032df95c61f3a0df7  ./lips
+4abb2c8356530525e4747451b147b1bd1848fab2  ./lipsrc.scm
+e98c8e0f5ace713cebc743091c9e30dc7bc7ef0c  ./modules/lips/process.scm
+936b592d40648a647ea94c4d304855ce64c39b74  ./modules/lips/standard.scm
+85b1fcb2eed33cbc2b3e7c291ae97a4751633f36  ./test.txt

@@ -1,0 +1,30 @@
+#!/usr/bin/guile -s
+!#
+
+(add-to-load-path (string-append (getenv "HOME") "/.config/lips/modules/"))
+
+(use-modules (lips process))
+
+(define (useage)
+  (display "Usage:\t lips < input.txt > output.txt | lips input.txt output.txt\n")
+  (exit 1))
+
+(define (main)
+  (let* ((args (command-line))
+	(argc (length args))
+	(config (string-append (getenv "HOME") "/.config/lips/lipsrc.scm")))
+    (if (access? config R_OK)
+    	(load config))
+    (cond
+      ((= argc 3) (set-current-input-port (open-file (list-ref args 1) "r"))
+		  (set-current-output-port (open-file (list-ref args 2) "w")))
+      ((= argc 1))
+      (else (useage)))
+    (process (current-input-port) (current-output-port))
+    (close-port (current-output-port))
+    (close-port (current-input-port))
+    (if (defined? 'call-finish-hooks)
+      (call-finish-hooks))))
+
+(main)
+
