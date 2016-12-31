@@ -8,7 +8,7 @@ exec guile -e "(@@ (codemac cmd timezip) main)" -s "$0" "$@"
   #:use-module (srfi srfi-2)
   #:use-module (web client)
   #:use-module (rnrs bytevectors)
-  #:use-module (codemac vendor irregex))
+  #:use-module (rx irregex))
 
 (define *ext-ip-cmd* '("dig" "+short" "myip.opendns.com" "@resolver1.opendns.com"))
 
