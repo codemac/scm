@@ -8,7 +8,7 @@ the idea is to depend on guile, but not much else. at some point i'll
 need to add .so compiled files to this as well, i imagine the build
 system will be tup because the lord said thall shall tup.
 
-* Vendoring
+* Vendoring & Third Party Code
 
 Run scmvendor to recopy code from the internet, but remember that many
 things to be loadable in guile kinda suck, so hacks are generally
