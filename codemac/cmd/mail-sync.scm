@@ -3,8 +3,10 @@
 exec guile -e "(@@ (codemac cmd mail-sync) main)" -s "$0" "$@"
 !#
 (define-module (codemac cmd mail-sync)
+  #:use-module (ice-9 ftw)
   #:use-module (srfi srfi-1)
-  #:use-module (srfi srfi-2))
+  #:use-module (srfi srfi-2)
+  #:export (main))
 
 (define mailsync-cmd '("mbsync" "-a"))
 (define notmuch-index-cmd '("notmuch" "new"))
@@ -13,9 +15,44 @@ exec guile -e "(@@ (codemac cmd mail-sync) main)" -s "$0" "$@"
 ;; TODO: when guile can be assuredly 2.1+ on any system I run on (so
 ;; in a few years?) replace this with a native guile-fibers
 ;; implementation.
-(define (timelimit-exec args)
-  (define timelimitargs '("timelimit" "-q" "-p" "-T" "5" "-t" "300"))
-  (zero? (status:exit-val (apply system* (append timelimitargs args)))))
+(define (no-timelimit-exec args)
+  (zero? (status:exit-val (apply system* args))))
+
+(define (find-delete-mbsync-lockfiles)
+  (ftw (string-append (getenv "HOME") "/mail")
+       (lambda (fn stat flag)
+	 (if (and (equal? flag 'regular)
+		  (string-suffix? ".lock" fn))
+	     (begin
+	       (format #t "Removing lockfile: ~s~%" fn)
+	       (delete-file fn)
+	       #t)
+	     #t))))
+
+(define (timeout-exec args)
+  (define timeout-args '("timeout" "-k" "10s" "10m"))
+  (let* ((res (status:exit-val (apply system* (append timeout-args args))))
+	 (errstr (format #f "timeout running: errcode: ~s args: ~s~%" res (append timeout-args args))))
+    (if (number? res)
+	(if (zero? res)
+	    #t
+	    (begin
+	      (format #t errstr)
+	      #f))
+	(begin
+	  (format #t errstr)
+	  #f))))
+;
+;(define (timelimit-exec args)
+;  (define timelimitargs '("timelimit" "-q" "-p" "-T" "30" "-t" "600"))
+;  (let ((res (status:exit-val (apply system* (append timelimitargs args)))))
+;    (if (number? res)
+;	(if (zero? res)
+;	    #t
+;	    (error "Timelimit error!"))
+;	(error "Timelimit error!"))))
+;
+(define timelimit-exec no-timelimit-exec)
 
 ;; An alist of pairs, string of search parameters, and a string of tag
 ;; parameters to notmuch
@@ -38,10 +75,12 @@ exec guile -e "(@@ (codemac cmd mail-sync) main)" -s "$0" "$@"
      . ("-new"))))
 
 (define (pull-mail)
-  (timelimit-exec mailsync-cmd))
+  (let ((res (timeout-exec mailsync-cmd)))
+    (find-delete-mbsync-lockfiles)
+    res))
 
 (define (notmuch-index)
-  (timelimit-exec notmuch-index-cmd))
+  (timeout-exec notmuch-index-cmd))
 
 (define (notmuch-tag)
   (reduce
@@ -50,10 +89,9 @@ exec guile -e "(@@ (codemac cmd mail-sync) main)" -s "$0" "$@"
     (lambda (x)
       (let ((search-term (car x))
 	    (tag-term (cdr x)))
-	(timelimit-exec (append notmuch-tag-cmd
-				tag-term
-				'("--")
-				search-term))))
+	(timeout-exec
+	 (append notmuch-tag-cmd tag-term '("--") search-term))))
+    
     notmuch-tag-order)))
 
 (define (run-in-order . thunks)
