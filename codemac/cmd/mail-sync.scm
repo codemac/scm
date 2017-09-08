@@ -52,7 +52,7 @@ exec guile -e "(@@ (codemac cmd mail-sync) main)" -s "$0" "$@"
 ;	    (error "Timelimit error!"))
 ;	(error "Timelimit error!"))))
 ;
-(define timelimit-exec no-timelimit-exec)
+;(define timeout-exec no-timelimit-exec)
 
 ;; An alist of pairs, string of search parameters, and a string of tag
 ;; parameters to notmuch
