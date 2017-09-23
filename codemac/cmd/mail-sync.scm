@@ -3,7 +3,9 @@
 exec guile -e "(@@ (codemac cmd mail-sync) main)" -s "$0" "$@"
 !#
 (define-module (codemac cmd mail-sync)
+  #:use-module (codemac util)
   #:use-module (ice-9 ftw)
+  #:use-module (ice-9 popen)
   #:use-module (srfi srfi-1)
   #:use-module (srfi srfi-2)
   #:export (main))
@@ -11,6 +13,7 @@ exec guile -e "(@@ (codemac cmd mail-sync) main)" -s "$0" "$@"
 (define mailsync-cmd '("mbsync" "-a"))
 (define notmuch-index-cmd '("notmuch" "new"))
 (define notmuch-tag-cmd '("notmuch" "tag"))
+(define notmuch-search-cmd '("notmuch" "search"))
 
 ;; TODO: when guile can be assuredly 2.1+ on any system I run on (so
 ;; in a few years?) replace this with a native guile-fibers
@@ -56,23 +59,40 @@ exec guile -e "(@@ (codemac cmd mail-sync) main)" -s "$0" "$@"
 
 ;; An alist of pairs, string of search parameters, and a string of tag
 ;; parameters to notmuch
-(define notmuch-tag-order
-  '((("tag:new" "and" "tag:unread")
-     . ("+flagged" "+unread"))
-    (("path:work/INBOX/**" "or" "path:cm/INBOX/**")
-     . ("+inbox"))
-    (("tag:new" "and" "tag:inbox")
-     . ("+flagged"))
-    (("from:j@codemac.net" "or" "from:jmickey@google.com")
-     . ("+sent"))
-    (("path:work/**")
-     . ("+work"))
-    (("path:cm/**")
-     . ("+codemac"))
-    (("not" "(" "path:work/INBOX/**" "or" "path:cm/INBOX/**" ")")
-     . ("-inbox"))
-    (("tag:new")
-     . ("-new"))))
+(define (notmuch-tag-order)
+  (let* ((muted-threads (notmuch-retrieve-all-muted))
+	 (muted-section (if (> (length muted-threads) 0)
+			    `(,muted-threads . ("+muted" "-flagged" "-unread" "-inbox"))
+			    '())))
+    `((("tag:new" "and" "tag:unread")
+       . ("+flagged" "+unread"))
+      (("path:work/INBOX/**" "or" "path:cm/INBOX/**")
+       . ("+inbox"))
+      (("tag:new" "and" "tag:inbox")
+       . ("+flagged"))
+      (("from:j@codemac.net" "or" "from:jmickey@google.com")
+       . ("+sent"))
+      (("path:work/**")
+       . ("+work"))
+      (("path:cm/**")
+       . ("+codemac"))
+      (("not" "(" "path:work/INBOX/**" "or" "path:cm/INBOX/**" ")")
+       . ("-inbox"))
+      ,muted-section
+      (("tag:new")
+       . ("-new")))))
+
+(define (notmuch-retrieve-all-muted)
+  (and-let*
+      ((args `(,OPEN_READ ,@notmuch-search-cmd "--output=threads" "tag:muted"))
+       (p (apply open-pipe* args))
+       (lines (read-lines-port p))
+       (exitv (status:exit-val (close-pipe p))))
+    (if (zero? exitv)
+	lines
+	(begin
+	  (format #t "Retrieve all failed with: ~s~%" lines)
+	  #f))))
 
 (define (pull-mail)
   (let ((res (timeout-exec mailsync-cmd)))
@@ -91,8 +111,7 @@ exec guile -e "(@@ (codemac cmd mail-sync) main)" -s "$0" "$@"
 	    (tag-term (cdr x)))
 	(timeout-exec
 	 (append notmuch-tag-cmd tag-term '("--") search-term))))
-    
-    notmuch-tag-order)))
+    (notmuch-tag-order))))
 
 (define (run-in-order . thunks)
   (let loop ((ts thunks))
