@@ -3,7 +3,7 @@ dnl Process this file with autoconf to procude a configure script.
 AC_PREREQ(2.69)
 
 dnl Initialization
-AC_INIT([GNU Shepherd], [0.3.1], [bug-guix@gnu.org])
+AC_INIT([GNU Shepherd], [0.3.2], [bug-guix@gnu.org])
 AC_CONFIG_SRCDIR([modules/shepherd.scm])
 AC_CONFIG_AUX_DIR([build-aux])
 
@@ -18,33 +18,17 @@ AC_CANONICAL_HOST
 AC_PROG_MKDIR_P
 AC_PROG_SED
 
+dnl Check for Guile 2.x.
+m4_pattern_forbid([^GUILE_PKG])
+GUILE_PKG([2.2 2.0])
+
 dnl Checks for programs.
 GUILE_PROGS
 
-AC_MSG_CHECKING([whether it is Guile 2.0])
-GUILE_CHECK(version_ok,
-(or (and (>= (string->number (major-version)) 2)
-         (>= (string->number (minor-version)) 0))
-    (quit 1))
-)
-if test $version_ok = 0; then
-  recent_version=yes
-else
-  recent_version=no
-fi
-AC_MSG_RESULT($recent_version)
-if test $recent_version = no; then
-  AC_MSG_WARN(your Guile is probably too old to run shepherd)
-fi
-
-AC_PATH_PROG([GUILD], [guild])
-if test "x$GUILD" = "x"; then
-   AC_MSG_ERROR(['guild' binary not found; please check your Guile 2.x installation.])
-fi
-AC_SUBST([GUILD])
-
-guilemoduledir="${datarootdir}/guile/site/2.0"
+guilemoduledir="${datarootdir}/guile/site/$GUILE_EFFECTIVE_VERSION"
+guileobjectdir="${libdir}/guile/$GUILE_EFFECTIVE_VERSION/site-ccache"
 AC_SUBST([guilemoduledir])
+AC_SUBST([guileobjectdir])
 
 dnl
 dnl Low-level operating system interface.

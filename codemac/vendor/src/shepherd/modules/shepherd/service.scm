@@ -388,25 +388,36 @@ wire."
 
 ;; Call action THE-ACTION with ARGS.
 (define-method (action (obj <service>) the-action . args)
-  (define (default-action running . args)
+  (define default-action
     ;; All actions which are handled here might be called even if the
     ;; service is not running, so they have to take this into account.
     (case the-action
       ;; Restarting is done in the obvious way.
       ((restart)
-       (if running
-	   (stop obj)
-           (local-output "~a was not running." (canonical-name obj)))
-       (start obj))
+       (lambda (running . args)
+         (if running
+             (stop obj)
+             (local-output "~a was not running." (canonical-name obj)))
+         (start obj args)))
       ((status)
        ;; Return the service itself.  It is automatically converted to an sexp
        ;; via 'result->sexp' and sent to the client.
-       obj)
+       (lambda (_) obj))
+      ((enable)
+       (lambda (_)
+         (enable obj)))
+      ((disable)
+       (lambda (_)
+         (disable obj)))
+      ((doc)
+       (lambda (_ . args)
+         (apply doc obj args)))
       (else
-       ;; FIXME: Unknown service.
-       (raise (condition (&unknown-action-error
-                          (service obj)
-                          (action the-action)))))))
+       (lambda _
+         ;; FIXME: Unknown service.
+         (raise (condition (&unknown-action-error
+                            (service obj)
+                            (action the-action))))))))
 
   (let ((proc (or (and=> (lookup-action obj the-action)
                          action-procedure)
@@ -416,21 +427,23 @@ wire."
     ;; information.
     ;; FIXME: Why should the user-implementations not be allowed to be
     ;; called this way?
-    (cond ((eq? proc default-action)
-           (apply default-action (slot-ref obj 'running) args))
-          ((not (running? obj))
-           (local-output "Service ~a is not running." (canonical-name obj))
-           #f)
-          (else
-           (catch #t
-             (lambda ()
-               (apply proc (slot-ref obj 'running) args))
-             (lambda (key . args)
-               ;; Special case: 'root' may quit.
-               (and (eq? root-service obj)
-                    (eq? key 'quit)
-                    (apply quit args))
-               (report-exception the-action obj key args)))))))
+    (catch #t
+      (lambda ()
+        (cond ((eq? proc default-action)
+               (apply default-action obj args))
+              ((not (running? obj))
+               (local-output "Service ~a is not running." (canonical-name obj))
+               #f)
+              (else
+               (apply proc (slot-ref obj 'running) args))))
+      (lambda (key . args)
+        ;; Special case: 'root' may quit.
+        (and (eq? root-service obj)
+             (eq? key 'quit)
+             (apply quit args))
+        (if (eq? key 'srfi-34)
+            (apply throw key args)                ;handled by callers
+            (report-exception the-action obj key args))))))
 
 ;; Display documentation about the service.
 (define-method (doc (obj <service>) . args)
@@ -567,16 +580,8 @@ results."
 		   (defines-action? unknown 'action))
 	      (apply action unknown 'action the-action args)
               (raise (condition (&missing-service-error (name obj))))))
-        (map (lambda (s)
-               (apply (case the-action
-                        ((enable) enable)
-                        ((disable) disable)
-                        ((doc) doc)
-                        (else
-                         (lambda (s . further-args)
-                           (apply action s the-action further-args))))
-                      s
-                      args))
+        (map (lambda (service)
+               (apply action service the-action args))
              which-services))))
 
 ;; EINTR-safe versions of 'system' and 'system*'.
@@ -662,8 +667,8 @@ set when starting a service."
 
 (define* (read-pid-file file #:key (max-delay 5))
   "Wait for MAX-DELAY seconds for FILE to show up, and read its content as a
-number.  Return #f if FILE does not contain a number; otherwise return the
-number that was read (a PID)."
+number.  Return #f if FILE was not created or does not contain a number;
+otherwise return the number that was read (a PID)."
   (define start (current-time))
   (let loop ()
     (catch 'system-error
@@ -673,20 +678,21 @@ number that was read (a PID)."
           (call-with-input-file file get-string-all))))
       (lambda args
         (let ((errno (system-error-errno args)))
-          (if (and (= ENOENT errno)
-                   (< (current-time) (+ start max-delay)))
-              (begin
-                ;; FILE does not exist yet, so wait and try again.
-                ;; XXX: Ideally we would yield to the main event loop
-                ;; and/or use inotify.
-                (sleep 1)
-                (loop))
+          (if (= ENOENT errno)
+              (and (< (current-time) (+ start max-delay))
+                   (begin
+                     ;; FILE does not exist yet, so wait and try again.
+                     ;; XXX: Ideally we would yield to the main event loop
+                     ;; and/or use inotify.
+                     (sleep 1)
+                     (loop)))
               (apply throw args)))))))
 
 (define* (exec-command command
                        #:key
                        (user #f)
                        (group #f)
+                       (log-file #f)
                        (directory (default-service-directory))
                        (environment-variables (default-environment-variables)))
   "Run COMMAND as the current process from DIRECTORY, and with
@@ -712,11 +718,26 @@ false."
 
      ;; Close all the file descriptors except stdout and stderr.
      (let ((max-fd (max-file-descriptors)))
-       (catch-system-error (close-fdes 0))
 
+       ;; Redirect stdin to use /dev/null
+       (catch-system-error (close-fdes 0))
        ;; Make sure file descriptor zero is used, so we don't end up reusing
        ;; it for something unrelated, which can confuse some packages.
        (dup2 (open-fdes "/dev/null" O_RDONLY) 0)
+
+       (when log-file
+         (catch #t
+           (lambda ()
+             ;; Redirect stout and stderr to use LOG-FILE.
+             (catch-system-error (close-fdes 1))
+             (catch-system-error (close-fdes 2))
+             (dup2 (open-fdes log-file (logior O_CREAT O_WRONLY)) 1)
+             (dup2 (open-fdes log-file (logior O_CREAT O_WRONLY)) 2))
+           (lambda (key . args)
+             (format (current-error-port)
+                     "failed to open log-file ~s:~%" log-file)
+             (print-exception (current-error-port) #f key args)
+             (primitive-exit 1))))
 
        (let loop ((i 3))
          (when (< i max-fd)
@@ -760,6 +781,7 @@ false."
                             #:key
                             (user #f)
                             (group #f)
+                            (log-file #f)
                             (directory (default-service-directory))
                             (environment-variables
                              (default-environment-variables)))
@@ -770,9 +792,14 @@ its PID."
         (exec-command command
                       #:user user
                       #:group group
+                      #:log-file log-file
                       #:directory directory
                       #:environment-variables environment-variables)
         pid)))
+
+(define %pid-file-timeout
+  ;; Maximum number of seconds we wait for a PID file to show up.
+  5)
 
 (define make-forkexec-constructor
   (let ((warn-deprecated-form
@@ -792,35 +819,50 @@ the procedure will be the PID of the child process.
 
 When @var{pid-file} is true, it must be the name of a PID file associated with
 the process being launched; the return value is the PID read from that file,
-once that file has been created."
+once that file has been created.  If @var{pid-file} does not show up in less
+than @var{pid-file-timeout} seconds, the service is considered as failing to
+start."
      ((command #:key
                (user #f)
                (group #f)
                (directory (default-service-directory))
                (environment-variables (default-environment-variables))
-               (pid-file #f))
+               (pid-file #f)
+               (pid-file-timeout %pid-file-timeout)
+               (log-file #f))
       (let ((command (if (string? command)
                          (begin
                            (warn-deprecated-form)
                            (list command))
                          command)))
         (lambda args
-          (when pid-file
-            (catch 'system-error
-              (lambda ()
-                (delete-file pid-file))
-              (lambda args
-                (unless (= ENOENT (system-error-errno args))
-                  (apply throw args)))))
+          (define (clean-up file)
+            (when file
+              (catch 'system-error
+                (lambda ()
+                  (delete-file file))
+                (lambda args
+                  (unless (= ENOENT (system-error-errno args))
+                    (apply throw args))))))
+
+          (clean-up pid-file)
+          (clean-up log-file)
 
           (let ((pid (fork+exec-command command
                                         #:user user
                                         #:group group
+                                        #:log-file log-file
                                         #:directory directory
                                         #:environment-variables
                                         environment-variables)))
             (if pid-file
-                (read-pid-file pid-file)
+                (match (read-pid-file pid-file
+                                      #:max-delay pid-file-timeout)
+                  (#f
+                   (catch-system-error (kill pid SIGTERM))
+                   #f)
+                  ((? integer? pid)
+                   pid))
                 pid)))))
      ((program . program-args)
       ;; The old form, documented until 0.1 included.
@@ -983,9 +1025,6 @@ otherwise by updating its state."
          ;; As noted in libc's manual (info "(libc) Process Completion"),
          ;; loop so we don't miss any terminated child process.
          (loop))))))
-
-;; Install it as the handler.
-(sigaction SIGCHLD respawn-service SA_NOCLDSTOP)
 
 ;; Add NEW-SERVICES to the list of known services.
 (define (register-services . new-services)

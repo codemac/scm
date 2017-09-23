@@ -142,7 +142,7 @@ exec guile -e "(@@ (codemac cmd scmvendor) main)" -s "$0" "$@"
     #t))
 
 (define (install-lips src)
-  (and-let* ((dst (string-append (scm-path) "/lips"))
+  (and-let* ((dst (scm-path))
 	     ((cp-r (string-append src "/modules/lips") dst)))
     #t))
 
@@ -161,7 +161,7 @@ exec guile -e "(@@ (codemac cmd scmvendor) main)" -s "$0" "$@"
    #:dir "shepherd"
    #:vcs 'git
    #:url "git://git.sv.gnu.org/shepherd.git"
-   #:ref "v0.3.1"
+   #:ref "v0.3.2"
    #:install install-shepherd)
   
   ;; mcron, used as my cron replacement

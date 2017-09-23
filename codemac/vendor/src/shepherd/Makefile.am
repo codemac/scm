@@ -32,7 +32,7 @@ BUILT_SOURCES = modules/shepherd/config.scm
 # XXX: we can't use 'nobase_' because of the modules/ subdirectory.
 dist_guilemodule_DATA =				\
   modules/shepherd.scm
-nodist_guilemodule_DATA = $(dist_guilemodule_DATA:%.scm=%.go)
+nodist_guileobject_DATA = $(dist_guilemodule_DATA:%.scm=%.go)
 
 shepherdsubdir = $(guilemoduledir)/shepherd
 dist_shepherdsub_DATA =				\
@@ -43,8 +43,11 @@ dist_shepherdsub_DATA =				\
   modules/shepherd/comm.scm
 nodist_shepherdsub_DATA =			\
   modules/shepherd/config.scm			\
+  modules/shepherd/system.scm
+
+shepherdgosubdir = $(guileobjectdir)/shepherd
+nodist_shepherdgosub_DATA =			\
   modules/shepherd/config.go			\
-  modules/shepherd/system.scm			\
   modules/shepherd/system.go			\
   $(dist_shepherdsub_DATA:%.scm=%.go)
 
@@ -53,12 +56,16 @@ dist_scripts_DATA =				\
   modules/shepherd/scripts/halt.scm		\
   modules/shepherd/scripts/herd.scm		\
   modules/shepherd/scripts/reboot.scm
-nodist_scripts_DATA =				\
+
+scriptsgodir = $(shepherdgosubdir)/scripts
+nodist_scriptsgo_DATA =				\
   $(dist_scripts_DATA:%.scm=%.go)
 
 CLEANFILES =						\
   $(nodist_guilemodule_DATA) $(nodist_shepherdsub_DATA)	\
-  $(nodist_scripts_DATA)				\
+  $(nodist_guileobject_DATA)				\
+  $(nodist_shepherdgosub_DATA)				\
+  $(nodist_scriptsgo_DATA)				\
   $(bin_SCRIPTS) $(sbin_SCRIPTS)
 
 # Documentation.
@@ -108,8 +115,8 @@ install-exec-hook: install-executable-symlinks
 	   $(bin_SCRIPTS:%=$(DESTDIR)$(bindir)/%)			\
 	   $(sbin_SCRIPTS:%=$(DESTDIR)$(sbindir)/%) ;			\
 	do								\
-	  $(SED) -e's|$(abs_top_srcdir)/modules|$(guilemoduledir)|g'	\
-	         -e's|$(abs_top_builddir)/modules|$(guilemoduledir)|g'	\
+	  $(SED) -e's|$(abs_top_srcdir)/modules\(.*\)%load-path|$(guilemoduledir)\1%load-path|g' \
+	         -e's|$(abs_top_builddir)/modules\(.*\)%load-compiled-path|$(guileobjectdir)\1%load-compiled-path|g' \
 	         -i $$script ;						\
 	done
 
@@ -178,6 +185,7 @@ TESTS =						\
   tests/respawn-throttling.sh			\
   tests/misbehaved-client.sh			\
   tests/no-home.sh				\
+  tests/pid-file.sh				\
   tests/status-sexp.sh				\
   tests/sigint.sh
 
@@ -199,13 +207,13 @@ AM_SH_LOG_FLAGS = -x -e
 # files.  See
 # <http://lists.gnu.org/archive/html/guile-devel/2010-07/msg00125.html>
 # for details.
-shepherd_install_go_files = install-nodist_guilemoduleDATA
+shepherd_install_go_files = install-nodist_guileobjectDATA
 $(shepherd_install_go_files): install-dist_guilemoduleDATA
 
-shepherdsub_install_go_files = install-nodist_shepherdsubDATA
-$(shepherdsub_install_go_files): install-dist_shepherdsubDATA
+shepherdsub_install_go_files = install-nodist_shepherdgosubDATA
+$(shepherdsub_install_go_files): install-dist_shepherdsubDATA install-nodist_shepherdsubDATA
 
-scripts_install_go_files = install-nodist_scriptsDATA
+scripts_install_go_files = install-nodist_scriptsgoDATA
 $(scripts_install_go_files): install-dist_scriptsDATA
 
 

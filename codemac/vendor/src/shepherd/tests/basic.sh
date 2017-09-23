@@ -94,7 +94,15 @@ then false; else true; fi
 $herd enable test-2
 $herd start test-2
 
+# This used to crash shepherd: <http://bugs.gnu.org/24684>.
+if $herd enable test-2 with extra arguments
+then false; else true; fi
+
 $herd status test-2 | grep started
+
+# Make sure extra arguments lead to an error.
+if $herd status test-2 something else that is useless
+then false; else true; fi
 
 for action in status start stop
 do
@@ -119,6 +127,10 @@ $herd doc root action status
 if $herd doc root action an-action-that-does-not-exist
 then false; else true; fi
 
+# Make sure the error message is correct.
+$herd doc root action an-action-that-does-not-exist 2>&1 | \
+    grep "does not have an action 'an-action-that-does-not-exist'"
+
 # Loading nonexistent file.
 if $herd load root /does/not/exist.scm;
 then false; else true; fi
@@ -126,7 +138,7 @@ then false; else true; fi
 # Unload two services, make sure the other it still around.
 $herd unload root broken
 $herd unload root test
-$herd status | grep "Stopped: (test-2)"
+$herd status | grep -e "- test-2"
 
 $herd reload root "$conf"
 test "`$herd status`" == "$pristine_status"
@@ -187,8 +199,9 @@ then false; else true; fi
 
 # Unload everything and make sure only 'root' is left.
 $herd unload root all
-$herd status | grep "Stopped: ()"
-$herd status | grep "Started: (root)"
+if $herd status | grep "Stopped:"
+then false; else true; fi
+$herd status | grep -e "+ root"
 
 $herd stop root
 ! kill -0 $shepherd_pid
