@@ -1,9 +1,9 @@
 (define-module (codemac syslog)
   #:use-module (system foreign))
 
-;; libc is special
+;; libc is special, so we don't need to specify it's path of a
+;; dynamic-link call.
 (define libcsyslog (dynamic-link))
-
 
 ;; syslog "options" bits
 (define *log-pid*    #x01)
@@ -26,7 +26,9 @@
 (define *log-cron*     (ash 9 3))
 (define *log-authpriv* (ash 10 3))
 (define *log-ftp*      (ash 11 3))
-;; 12-15 reserved
+(define *log-reserve0* (ash 12 3))
+(define *log-reserve1* (ash 14 3))
+(define *log-reserve2* (ash 15 3))
 (define *log-local0*   (ash 16 3))
 (define *log-local1*   (ash 17 3))
 (define *log-local2*   (ash 18 3))
@@ -35,7 +37,6 @@
 (define *log-local5*   (ash 21 3))
 (define *log-local6*   (ash 22 3))
 (define *log-local7*   (ash 23 3))
-
 
 ;; syslog priority bits
 (define *log-emerg*   0)
