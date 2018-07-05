@@ -6,11 +6,14 @@ exec guile -e "(@@ (codemac cmd mail-sync) main)" -s "$0" "$@"
   #:use-module (codemac util)
   #:use-module (ice-9 ftw)
   #:use-module (ice-9 popen)
+  #:use-module (ice-9 regex)
   #:use-module (srfi srfi-1)
   #:use-module (srfi srfi-2)
   #:export (main))
 
 (define mailsync-cmd '("mbsync" "-a"))
+(define mu-index-cmd '("mu" "index" "--maildir=~/mail"))
+(define mu-update-emacs-cmd '("emacsclient" "-n" "-e" "(mu4e-update-index)"))
 (define notmuch-index-cmd '("notmuch" "new"))
 (define notmuch-tag-cmd '("notmuch" "tag"))
 (define notmuch-search-cmd '("notmuch" "search"))
@@ -33,7 +36,7 @@ exec guile -e "(@@ (codemac cmd mail-sync) main)" -s "$0" "$@"
 	     #t))))
 
 (define (timeout-exec args)
-  (define timeout-args '("timeout" "-k" "10s" "90m"))
+  (define timeout-args '("timeout" "30m"))
   (let* ((res (status:exit-val (apply system* (append timeout-args args))))
 	 (errstr (format #f "timeout running: errcode: ~s args: ~s~%" res (append timeout-args args))))
     (if (number? res)
@@ -45,7 +48,7 @@ exec guile -e "(@@ (codemac cmd mail-sync) main)" -s "$0" "$@"
 	(begin
 	  (format #t errstr)
 	  #f))))
-;
+
 ;(define (timelimit-exec args)
 ;  (define timelimitargs '("timelimit" "-q" "-p" "-T" "30" "-t" "600"))
 ;  (let ((res (status:exit-val (apply system* (append timelimitargs args)))))
@@ -60,29 +63,20 @@ exec guile -e "(@@ (codemac cmd mail-sync) main)" -s "$0" "$@"
 ;; An alist of pairs, string of search parameters, and a string of tag
 ;; parameters to notmuch
 (define (notmuch-tag-order)
-  (let* ((muted-threads (notmuch-retrieve-all-muted))
-	 (muted-section (if (> (length muted-threads) 0)
-			    `(,muted-threads . ("+muted" "-flagged" "-unread" "-inbox"))
-			    '())))
-    `((("tag:new" "and" "tag:unread")
-       . ("+unread"))
-      (("path:work/INBOX/**" "or" "path:cm/INBOX/**")
-       . ("+inbox"))
-      (("tag:new" "and" "tag:inbox")
-       . ("+flagged"))
-      (("from:j@codemac.net" "or" "from:jmickey@google.com")
-       . ("+sent"))
-       (("tag:new" "AND" "(" "to:jmickey@google.com" "OR" "to:j@codemac.net" "OR" "cc:jmickey@google.com" "OR" "jmickey" ")")
-       . ("+flagged"))
-      (("path:work/**")
-       . ("+work"))
-      (("path:cm/**")
-       . ("+codemac"))
-      (("not" "(" "path:work/INBOX/**" "or" "path:cm/INBOX/**" ")")
-       . ("-inbox"))
-      ,muted-section
-      (("tag:new")
-       . ("-new")))))
+  `((("tag:new" "and" "tag:unread")
+     . ("+unread"))
+    (("(" "path:work/INBOX/**" "or" "path:cm/INBOX/**" ")" "and" "-tag:archive")
+     . ("+inbox"))
+    (("from:j@codemac.net" "or" "from:jmickey@google.com")
+     . ("+sent"))
+    (("path:work/**")
+     . ("+work"))
+    (("path:cm/**")
+     . ("+codemac"))
+    (("not" "(" "path:work/INBOX/**" "or" "path:cm/INBOX/**" ")")
+     . ("-inbox" "-archive"))
+    (("tag:new")
+     . ("-new"))))
 
 (define (notmuch-retrieve-all-muted)
   (and-let*
@@ -96,6 +90,38 @@ exec guile -e "(@@ (codemac cmd mail-sync) main)" -s "$0" "$@"
 	  (format #t "Retrieve all failed with: ~s~%" lines)
 	  #f))))
 
+(define (notmuch-retrieve-all-archive path)
+  (and-let*
+      ((args `(,OPEN_READ ,@notmuch-search-cmd "--output=files" "tag:archive" "and" ,(string-append "path:" path "/INBOX/**")))
+       (p (apply open-pipe* args))
+       (lines (read-lines-port p))
+       (exitv (status:exit-val (close-pipe p))))
+    (if (zero? exitv)
+	lines
+	(begin
+	  (format #t "Retrieve all failed with: ~s~%" lines)
+	  #f))))
+
+;; remove UID from mailpath
+;; construct path given dstpath acct to archive
+(define (archive-mail-message dst mailpath)
+  (let* ((dstpath (string-append (getenv "HOME") "/mail/" dst "/all/cur/"))
+	 (newfile (regexp-substitute/global #f ",U=[0-9]+" (basename mailpath) 'pre 'post))
+	 (newpath (string-append dstpath newfile)))
+    (if (and (file-exists? mailpath)
+	     (not (string-prefix? dstpath mailpath)))
+	(rename-file mailpath newpath)
+	#t)))
+
+(define (notmuch-archive-mail)
+  (for-each
+   (lambda (x)
+     (for-each
+      (lambda (f) (archive-mail-message x f))
+      (notmuch-retrieve-all-archive x)))
+   (list "work" "cm"))
+  #t)
+
 (define (pull-mail)
   (let ((res (timeout-exec mailsync-cmd)))
     (find-delete-mbsync-lockfiles)
@@ -103,6 +129,12 @@ exec guile -e "(@@ (codemac cmd mail-sync) main)" -s "$0" "$@"
 
 (define (notmuch-index)
   (timeout-exec notmuch-index-cmd))
+
+(define (mu-index)
+  (timeout-exec mu-index-cmd))
+
+(define (mu-update-emacs)
+  (timeout-exec mu-update-emacs-cmd))
 
 (define (notmuch-tag)
   (reduce
@@ -128,6 +160,14 @@ exec guile -e "(@@ (codemac cmd mail-sync) main)" -s "$0" "$@"
 
 (define (main . args)
   (run-in-order
+   notmuch-archive-mail
    pull-mail
    notmuch-index
    notmuch-tag))
+
+;; (define (main . args)
+;;   (run-in-order
+;;    pull-mail
+;;    mu-update-emacs))
+
+

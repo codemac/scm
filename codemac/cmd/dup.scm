@@ -31,7 +31,7 @@ exec guile -e "(@@ (codemac cmd dup) main)" -s "$0" "$@"
      (format #t "dup => ~a~%" (car x))
      (for-each
       (lambda (x)
-	(format #t "~a~%" x))
+	(format #t "       ~a~%" x))
       (cadr x)))
    (filter
     list?

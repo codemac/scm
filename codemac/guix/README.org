@@ -1,0 +1,12 @@
+* guix packages
+
+This is a set of guix packages for personal use as part of a guix
+overlay.
+
+The guix package system needs to search all modules for packages, and
+thus cannot handle the libraries I've stuffed around in $HOME/scm as
+the guix overlay. GUIX_PACKAGE_PATH=$HOME/scm/codemac/guix is
+required, otherwise it tries to load everything.
+
+It makes it hard to share code between guix & other scheme, but I
+don't have better options for =guix package -s=.
