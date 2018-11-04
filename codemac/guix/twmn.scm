@@ -1,10 +1,16 @@
 (define-module (twmn)
+  #:use-module (gnu packages boost)
+  #:use-module (gnu packages pkg-config)
+  #:use-module (gnu packages qt)
+  #:use-module (gnu packages version-control)
+  #:use-module (gnu packages xdisorg)
+  #:use-module (gnu packages xorg)
   #:use-module ((guix licenses) #:prefix license:)
   #:use-module (guix packages)
   #:use-module (guix utils)
   #:use-module (guix download)
   #:use-module (guix git-download)
-  #:use-module (guix build-system cmake))
+  #:use-module (guix build-system gnu))
 
 ;;
 ;; pkgdesc="A notification system for tiling window managers"
@@ -30,12 +36,24 @@
               (file-name (git-file-name name version))
               (sha256
                (base32
-                "1awi71jdv3mhjrmar2d4z1i90kn7apd7aq1w31sh6w4yibz9kiyj"))))
-   ;; (native-inputs
-   ;;  `(,git ,pkg-config ,boost))
-   ;; (inputs
-   ;;  `(,qt5-base ,qt5-x11extras ,boost-libs ,libext ,libxkbcommon-x11))
-   (build-system cmake-build-system)
+		"0nhd7apm7j9gv2bic289hami30ghvlayqa1dx8l8f8k5dr9vjanx"))))
+   (native-inputs
+    `(("git" ,git)
+      ("pkg-config" ,pkg-config)
+      ("qtbase" ,qtbase)
+      ("qtx11extras" ,qtx11extras)
+      ("boost" ,boost)))
+   (inputs
+    `(("libxext" ,libxext)
+      ("libxkbcommon" ,libxkbcommon)))
+   (build-system gnu-build-system)
+   (arguments
+    `(#:phases
+      (modify-phases %standard-phases
+         (replace 'configure
+           (lambda* (#:key outputs #:allow-other-keys)
+             (let ((out (assoc-ref outputs "out")))
+               (invoke "qmake")))))))
    (home-page "https://github.com/sboli/twmn")
    (synopsis "A notification system for tiling window managers")
    (description "A notification system for tiling window managers")

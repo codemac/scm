@@ -17,5 +17,11 @@ exec guile -e "(@@ (codemac cmd term) main)" -s "$0" "$@"
 	(br (gen-color)))
     (format #f "#~2,'0x~2,'0x~2,'0x" rr gr br)))
 
+(define (xterm bgcolor)
+  (execlp "uxterm" "uxterm" "-bg" bgcolor))
+
+(define (kitty bgcolor)
+  (execlp "kitty" "kitty" "-o" (string-append "background=" bgcolor)))
+
 (define (main arg0 . args)
-  (execlp "uxterm" "uxterm" "-bg" (generate-rand-color)))
+  (xterm (generate-rand-color)))

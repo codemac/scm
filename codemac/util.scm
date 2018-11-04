@@ -49,3 +49,4 @@
 (define (curry func . cargs)
   (lambda largs
     (apply func (append cargs largs))))
+

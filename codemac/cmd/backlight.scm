@@ -7,6 +7,7 @@ exec guile -e "(@@ (codemac cmd backlight) main)" -s "$0" "$@"
   #:use-module (ice-9 rdelim)
   #:use-module (srfi srfi-2))
 
+(use-modules (ice-9 ftw) (ice-9 rdelim) (srfi srfi-2))
 ;; first we see if there is only one backlight driver,
 
 (define *sys-bl-path* "/sys/class/backlight/")
@@ -35,16 +36,53 @@ exec guile -e "(@@ (codemac cmd backlight) main)" -s "$0" "$@"
       (backlight-get-max bl))
    100))
 
+(define (calc-percent x max)
+  (floor-quotient (* x max) 100))
+
+(define (raw-add x cur blmax bl)
+  (backlight-write bl (min (+ cur x) blmax)))
+
+(define (raw-sub x cur blmax bl)
+  (backlight-write bl (max (- cur x) 0)))
+
+(define (percent-add x cur blmax bl)
+  (backlight-write bl (min (+ cur (calc-percent x blmax)) blmax)))
+
+(define (percent-sub x cur blmax bl)
+  (backlight-write bl (max (- cur (calc-percent x blmax)) 0)))
+
+(define (percent-absolute x cur blmax bl)
+  (backlight-write bl (calc-percent x blmax)))
+
+(define (raw-absolute x cur max bl)
+  (backlight-write bl x))
+
+(define (arg-mode val)
+  (let* ((percentage (string-suffix? "%" val))
+	 (sub (if percentage percent-sub raw-sub))
+	 (add (if percentage percent-add raw-add)))
+    (cond
+     ((string-prefix? "-" val) sub)
+     ((string-prefix? "+" val) add)
+     (percentage percent-absolute)
+     (else
+      raw-absolute))))
+
+;; given +10% -> add
 (define (backlight-set bl val)
-  (if (string-suffix? "%" val)
-      (set! val (backlight-get-percentage bl val))
-      (set! val (string->number val)))
+  (let* ((mode (arg-mode val))
+	 (bl-cur (backlight-get bl))
+	 (bl-max (backlight-get-max bl))
+	 (num (string-trim-both val (char-set #\% #\+ #\- #\space))))
+    (mode (string->number num) bl-cur bl-max bl)))
+
+(define (backlight-write bl val)
   (and-let* ((outf (open-output-file (string-append *sys-bl-path* bl "/brightness")))
 	     ((display val outf)))
     (format #t "~a~%" val)))
 
 (define (usage)
-  (format #t "backlight <set|get> [percent] [backlight name]~%"))
+  (format #t "backlight <set|get> [delta][percent] [backlight name]~%"))
 
 (define (action name val backlight)
   (case (string->symbol name)

@@ -21,6 +21,7 @@ exec guile -e "(@@ (codemac cmd scmvendor) main)" -s "$0" "$@"
 (define (mkdir-p dir)
   (equal? 0 (status:exit-val
 	     (system* "mkdir" "-p" dir))))
+
 ;; reimplement in raw guile
 (define (rmdir* dir)
   (equal? 0 (status:exit-val
@@ -146,6 +147,11 @@ exec guile -e "(@@ (codemac cmd scmvendor) main)" -s "$0" "$@"
 	     ((cp-r (string-append src "/modules/lips") dst)))
     #t))
 
+(define (install-megacut src)
+  (and-let* ((dst (string-append (scm-path) "/megacut.scm"))
+	     ((cp-r (string-append src "/megacut.scm") dst)))
+    #t))
+
 (define (main args)
   ;; irregex is life
   (vendor
@@ -177,4 +183,11 @@ exec guile -e "(@@ (codemac cmd scmvendor) main)" -s "$0" "$@"
    #:vcs 'git
    #:url "https://github.com/rbryan/guile-lips"
    #:ref "9e253a873f7eb842095859eef6f55611458b618f"
-   #:install install-lips))
+   #:install install-lips)
+
+  (vendor
+   #:dir megacut
+   #:vcs 'git
+   #:url "https://bitbucket.org/bjoli/megacut"
+   #:ref "4695b7fa3847fc6d6ed3bc3f9cf07604bc86cc72"
+   #:install install-megacut))
