@@ -54,25 +54,25 @@
    (description "A sasl oauth2 plugin for libsasl")
    (license license:isc)))
 
-(define-public cyrus-sasl-oauth2
-  (package (inherit cyrus-sasl)
-	   (name "cyrus-sasl-oauth2")
-	   (synopsis "cyrus-sasl with oauth2")
-	   (propagated-inputs
-	    `(("sasl-oauth2" ,sasl-oauth)))
-	   (inputs
-	    `(("gdbm" ,gdbm)
-	      ("mit-krb5" ,mit-krb5)
-	      ("sasl-oauth2" ,sasl-oauth)
-	      ("openssl" ,openssl)))))
+;(define-public cyrus-sasl-oauth2
+;  (package (inherit cyrus-sasl)
+;	   (name "cyrus-sasl-oauth2")
+;	   (synopsis "cyrus-sasl with oauth2")
+;	   (propagated-inputs
+;	    `(("sasl-oauth2" ,sasl-oauth)))
+;	   (inputs
+;	    `(("gdbm" ,gdbm)
+;	      ("mit-krb5" ,mit-krb5)
+;	      ("sasl-oauth2" ,sasl-oauth)
+;	      ("openssl" ,openssl)))))
 
-(define-public isync-oauth2
-  (package (inherit isync)
-	   (name "isync-oauth2")
-	   (synopsis "A sasl xoauth2 enabled mbsync")
-	   (inputs
-	    `(("bdb" ,bdb)
-	      ("cyrus-sasl-oauth2" ,cyrus-sasl-oauth2)
-	      ("openssl" ,openssl)
-	      ("zlib" ,zlib)
-	      ("sasl-oauth2" ,sasl-oauth2)))))
+; (define-public isync-oauth2
+;   (package (inherit isync)
+; 	   (name "isync-oauth2")
+; 	   (synopsis "A sasl xoauth2 enabled mbsync")
+; 	   (inputs
+; 	    `(("bdb" ,bdb)
+; 	      ("cyrus-sasl-oauth2" ,cyrus-sasl-oauth2)
+; 	      ("openssl" ,openssl)
+; 	      ("zlib" ,zlib)
+; 	      ("sasl-oauth2" ,sasl-oauth2)))))

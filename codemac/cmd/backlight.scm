@@ -4,6 +4,7 @@ exec guile -e "(@@ (codemac cmd backlight) main)" -s "$0" "$@"
 !#
 (define-module (codemac cmd backlight)
   #:use-module (ice-9 ftw)
+  #:use-module (ice-9 popen)
   #:use-module (ice-9 rdelim)
   #:use-module (srfi srfi-2))
 
@@ -76,10 +77,25 @@ exec guile -e "(@@ (codemac cmd backlight) main)" -s "$0" "$@"
 	 (num (string-trim-both val (char-set #\% #\+ #\- #\space))))
     (mode (string->number num) bl-cur bl-max bl)))
 
+(define (textbar ratio width)
+  (let ((nchars (floor (* ratio (- width 2)))))
+    (format
+     #f
+     (string-append "[~" (number->string (-  width 2)) ",,,' a]")
+     (format
+      #f
+      (string-append "~" (number->string nchars) ",1,0,'=a") ""))))
+
+(define (display-x11 bl val)
+  (let* ((backlight-max (backlight-get-max bl))
+	 (bar (textbar (/ val backlight-max) 50)))
+    (close-pipe (open-pipe (format #f "( echo \"~a\"; sleep 0.2 ) | dzen2 -fn \"-*-courier-medium-r-normal--14-*-*-*-*-*-*-*\" -fg white -bg black -y -16 -h 17" bar) OPEN_BOTH))))
+
 (define (backlight-write bl val)
   (and-let* ((outf (open-output-file (string-append *sys-bl-path* bl "/brightness")))
 	     ((display val outf)))
-    (format #t "~a~%" val)))
+    (format #t "~a~%" val)
+    (display-x11 bl val)))
 
 (define (usage)
   (format #t "backlight <set|get> [delta][percent] [backlight name]~%"))
