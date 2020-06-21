@@ -4,5 +4,3 @@
 (define (bayes-a-given-b b-given-a pa pb)
   (/ (* b-given-a pa) pb))
 
-
-
