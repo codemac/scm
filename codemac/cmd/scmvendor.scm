@@ -47,7 +47,9 @@ exec guile -e "(@@ (codemac cmd scmvendor) main)" -s "$0" "$@"
      (and
       (equal? 0 (status:exit-val (system* "git" "clone" url dir)))
       (with-dir dir (string-append "git checkout " ref))
-      (with-dir dir "rm -rf .git")))))
+      (with-dir dir "rm -rf .git")))
+    (else
+     (error "Not implemented"))))
 
 (define (hashdir dir)
   (if (file-exists? (string-append dir "/.VENDORSHA1"))
@@ -152,6 +154,11 @@ exec guile -e "(@@ (codemac cmd scmvendor) main)" -s "$0" "$@"
 	     ((cp-r (string-append src "/megacut.scm") dst)))
     #t))
 
+(define (install-scsh src)
+  (and-let* ((dst (string-append (scm-path) "scsh"))
+	     (cp-r (string-append src "scsh") dst))
+    #t))
+
 (define (main args)
   ;; irregex is life
   (vendor
@@ -186,8 +193,15 @@ exec guile -e "(@@ (codemac cmd scmvendor) main)" -s "$0" "$@"
    #:install install-lips)
 
   (vendor
-   #:dir megacut
+   #:dir "megacut"
    #:vcs 'git
    #:url "https://bitbucket.org/bjoli/megacut"
    #:ref "4695b7fa3847fc6d6ed3bc3f9cf07604bc86cc72"
-   #:install install-megacut))
+   #:install install-megacut)
+
+  (vendor
+   #:dir "scsh"
+   #:vcs 'git
+   #:url "https://github.com/ChaosEternal/guile-scsh"
+   #:ref "1a76e006e193a6a8c9f93d23bacb9e51a1ff6c4c"
+   #:install install-scsh))
