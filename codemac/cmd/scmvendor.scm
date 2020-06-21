@@ -46,6 +46,7 @@ exec guile -e "(@@ (codemac cmd scmvendor) main)" -s "$0" "$@"
 	       (system* "mv" src dst))))
 
 (define (with-dir dir cmd)
+  (display (string-append "dir: " dir " cmd: " cmd "\n"))
   (equal? 0 (status:exit-val
 	     (system* "sh" "-c" (string-append "cd " dir " && " cmd)))))
 
