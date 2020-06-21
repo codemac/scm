@@ -2,9 +2,9 @@
 # -*- scheme -*-
 exec guile -e "(@@ (codemac cmd scmvendor) main)" -s "$0" "$@"
 !#
-
 (define-module (codemac cmd scmvendor)
   #:use-module (srfi srfi-2)
+  #:use-module (ice-9 pretty-print)
   #:export (vendor-load-path))
 
 (define (cp-r src dst)
@@ -22,10 +22,18 @@ exec guile -e "(@@ (codemac cmd scmvendor) main)" -s "$0" "$@"
   (equal? 0 (status:exit-val
 	     (system* "mkdir" "-p" dir))))
 
+(define-macro (define-debug args . rest)
+  (let ((result-val (gensym)))
+    `(define ,args
+       (let ((,result-val (begin ,@rest)))
+	 (pretty-print ,result-val)))))
+
 ;; reimplement in raw guile
-(define (rmdir* dir)
+(define-debug (rmdir* dir)
+  (display (string-append  "rmdir* " dir))
+  (newline)
   (equal? 0 (status:exit-val
-	     (system* "rm" "-r" dir))))
+	     (system* "rm" "-rf" dir))))
 
 (define (sed fn sep pat repl)
   (let ((cmdlist (list "sed" "-i" (string-append "s" sep pat sep repl sep) fn)))
@@ -51,16 +59,6 @@ exec guile -e "(@@ (codemac cmd scmvendor) main)" -s "$0" "$@"
     (else
      (error "Not implemented"))))
 
-(define (hashdir dir)
-  (if (file-exists? (string-append dir "/.VENDORSHA1"))
-      (if (with-dir dir "sha1sum -c .VENDORSHA1 > .HASHOUT")
-	  (begin (delete-file ".HASHOUT") #t)
-	  #f)
-      (rehashdir dir ".VENDORSHA1")))
-
-(define (rehashdir dir file)
-  (with-dir dir (string-append "find . -type f -exec sha1sum '{}' ';' | grep -v .VENDORSHA1 | sort -k2 > " file)))
-
 (define (vendor-abs-path)
   (string-append (getenv "HOME") "/scm/" (vendor-load-path)))
 
@@ -82,8 +80,6 @@ exec guile -e "(@@ (codemac cmd scmvendor) main)" -s "$0" "$@"
       (let ((srcdir (string-append (vendor-abs-path) "/src/" dir)))
 	(rmdir* srcdir)
 	(runvendor srcdir vcs url ref)
-	(if (not (hashdir srcdir))
-	    (rehashdir srcdir ".NEWHASH"))
 	(install srcdir))))
 
 ;; here I codify vendored installs, as guile vendoring isn't really
@@ -155,8 +151,8 @@ exec guile -e "(@@ (codemac cmd scmvendor) main)" -s "$0" "$@"
     #t))
 
 (define (install-scsh src)
-  (and-let* ((dst (string-append (scm-path) "scsh"))
-	     (cp-r (string-append src "scsh") dst))
+  (and-let* ((dst (string-append (scm-path) "/scsh"))
+	     ((cp-r (string-append src "/scsh") dst)))
     #t))
 
 (define (main args)
