@@ -152,9 +152,7 @@ exec guile -e "(@@ (codemac cmd scmvendor) main)" -s "$0" "$@"
     #t))
 
 (define (install-scsh src)
-  (and-let* ((dst (string-append (scm-path) "/scsh"))
-	     ((cp-r (string-append src "/scsh") dst)))
-    #t))
+  (cp-r (string-append src "/scsh") (scm-path)))
 
 (define (main args)
   ;; irregex is life
