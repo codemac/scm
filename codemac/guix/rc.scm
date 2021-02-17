@@ -4,9 +4,9 @@
   #:use-module (gnu packages)
   #:use-module (guix utils))
 
-(package
+(define-public rc-master
+	       (package (inherit rc))
  (name "rc-master")
- (inherit rc)
  (version "ceb59bb2a644f4ebc1645fe15f1063029579fa7c")
  (source (origin
           (method git-fetch)
