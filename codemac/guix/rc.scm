@@ -1,6 +1,6 @@
 (define-module (rc)
   #:use-module (guix packages)
-  #:use-module (gnu packages rc)
+  #:use-module (gnu packages shells)
   #:use-module (gnu packages)
   #:use-module (guix utils))
 
