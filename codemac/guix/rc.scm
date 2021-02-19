@@ -1,7 +1,8 @@
 (define-module (rc)
   #:use-module (guix packages)
-  #:use-module (gnu packages shells)
+  #:use-module (guix git-download)
   #:use-module (gnu packages)
+  #:use-module (gnu packages shells)
   #:use-module (guix utils))
 
 (define-public rc-master
