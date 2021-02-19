@@ -1,4 +1,4 @@
-(define-module (mbsync-oauth)
+(define-module (codemac mbsync-oauth)
   #:use-module ((guix licenses) #:prefix license:)
   #:use-module (guix packages)
   #:use-module (gnu packages autotools)

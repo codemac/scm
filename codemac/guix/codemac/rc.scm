@@ -1,4 +1,4 @@
-(define-module (codemac guix rc)
+(define-module (codemac rc)
   #:use-module (guix packages)
   #:use-module (guix git-download)
   #:use-module (gnu packages)
