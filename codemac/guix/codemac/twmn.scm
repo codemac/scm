@@ -1,4 +1,4 @@
-(define-module (twmn)
+(define-module (codemac twmn)
   #:use-module (gnu packages boost)
   #:use-module (gnu packages pkg-config)
   #:use-module (gnu packages qt)
